@@ -35,7 +35,7 @@ void unhookKeyboard()
 
 std::string HookCode(DWORD code, BOOL caps, BOOL shift)
 {
-	std::cout << "code=" << code << ",shift=" << shift << ",caps=" << caps << std::endl;
+	//std::cout << "code=" << code << ",shift=" << shift << ",caps=" << caps << std::endl;
 
 	/*
 	Translate the return code from hook and 
@@ -150,16 +150,16 @@ std::string HookCode(DWORD code, BOOL caps, BOOL shift)
 		case VK_DELETE:  key = "[DEL]"; break;
 		case VK_HELP:    key = "[HELP]"; break;
 		// Number Keys with shift
-		case 0x30:  key = shift ? "!" : "1"; break; 
-		case 0x31:  key = shift ? "@" : "2"; break;
-		case 0x32:  key = shift ? "#" : "3"; break;
-		case 0x33:  key = shift ? "$" : "4"; break;
-		case 0x34:  key = shift ? "%" : "5"; break;
-		case 0x35:  key = shift ? "^" : "6"; break;
-		case 0x36:  key = shift ? "&" : "7"; break;
-		case 0x37:  key = shift ? "*" : "8"; break;
-		case 0x38:  key = shift ? "(" : "9"; break;
-		case 0x39:  key = shift ? ")" : "0"; break;
+		case 0x30:  key = shift ? ")" : "0"; break;
+		case 0x31:  key = shift ? "!" : "1"; break;
+		case 0x32:  key = shift ? "@" : "2"; break;
+		case 0x33:  key = shift ? "#" : "3"; break;
+		case 0x34:  key = shift ? "$" : "4"; break;
+		case 0x35:  key = shift ? "%" : "5"; break;
+		case 0x36:  key = shift ? "^" : "6"; break;
+		case 0x37:  key = shift ? "&" : "7"; break;
+		case 0x38:  key = shift ? "*" : "8"; break;
+		case 0x39:  key = shift ? "(" : "9"; break;
 		// Windows Keys
 		case VK_LWIN:     key = "[WIN]"; break;
 		case VK_RWIN:     key = "[WIN]"; break;
@@ -185,7 +185,11 @@ std::string HookCode(DWORD code, BOOL caps, BOOL shift)
 		case VK_OEM_CLEAR:  key = "[CLEAR]";
 		case VK_CANCEL:     key = "[CTRL-C]";
 
-		default: key = "[UNK-KEY]";break;
+		default: 
+			std::stringstream ss;
+			ss << "0x" << std::hex << code;
+			key = "[UNK-KEY]" + ss.str();
+			break;
 	}
 	return key;
 
@@ -250,18 +254,18 @@ LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
 		// Check for SHIFT key
 		if (p->vkCode == VK_LSHIFT || p->vkCode == VK_RSHIFT)
 		{
-			std::cout << "wParam=" << wParam << std::endl;
+			//std::cout << "wParam=" << wParam << std::endl;
 
 			// WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, or WM_SYSKEYUP.
 			if (wParam == WM_KEYDOWN)
 			{
-				std::cout << "shift DOWN" << std::endl;
+				//std::cout << "shift DOWN" << std::endl;
 				shift = TRUE;
 			}
 			else 
 			if (wParam == WM_KEYUP)
 			{
-				std::cout << "shift UP" << std::endl;
+				//std::cout << "shift UP" << std::endl;
 				shift = FALSE;
 			}
 			else
