@@ -35,6 +35,8 @@ void unhookKeyboard()
 
 std::string HookCode(DWORD code, BOOL caps, BOOL shift)
 {
+	std::cout << "code=" << code << ",shift=" << shift << ",caps=" << caps << std::endl;
+
 	/*
 	Translate the return code from hook and 
 	return the std::string rep of the the code.
@@ -78,8 +80,8 @@ std::string HookCode(DWORD code, BOOL caps, BOOL shift)
 		// Sleep Key
 		case VK_SLEEP: key = "[SLEEP]"; break;
 		// Num Keyboard 
-		case VK_NUMPAD0:  key = "0"; break;
-		case VK_NUMPAD1:  key = "1"; break;
+		case VK_NUMPAD0:  key = "0"; std::cout << "VK_NUMPAD0" << std::endl; break;
+		case VK_NUMPAD1:  key = "1"; std::cout << "VK_NUMPAD1" << std::endl; break;
 		case VK_NUMPAD2 : key = "2"; break;
 		case VK_NUMPAD3:  key = "3"; break;
 		case VK_NUMPAD4:  key = "4"; break;
@@ -248,17 +250,23 @@ LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
 		// Check for SHIFT key
 		if (p->vkCode == VK_LSHIFT || p->vkCode == VK_RSHIFT)
 		{
+			std::cout << "wParam=" << wParam << std::endl;
+
 			// WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, or WM_SYSKEYUP.
 			if (wParam == WM_KEYDOWN)
 			{
+				std::cout << "shift DOWN" << std::endl;
 				shift = TRUE;
 			}
+			else 
 			if (wParam == WM_KEYUP)
 			{
+				std::cout << "shift UP" << std::endl;
 				shift = FALSE;
 			}
 			else
 			{
+				std::cout << "wParam shift UP" << std::endl;
 				shift = FALSE;
 			}
 		}
