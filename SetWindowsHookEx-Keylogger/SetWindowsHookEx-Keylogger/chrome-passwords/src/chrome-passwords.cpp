@@ -3,7 +3,7 @@
 	URL: https://github.com/adnanonline/chrome-passwords
 	License: GNU GPL V3
 */
-#include "stdafx.h"
+#include "..\..\stdafx.h"
 
 using namespace std;
 
