@@ -256,6 +256,15 @@ void PasswordRun(LPSTR lpCmdLine)
 		}
 
 		bool flagCookies = false, flagPause = false;
+		try {
+			ifstream f((strTempPath + "cookies.bin").c_str());
+			flagCookies = f.good();
+		}
+		catch (...)
+		{
+
+		}
+
 		for (int i = 0; i < argc; i++) {
 			if (strlen(argv[i]) < 2)continue;
 			switch (argv[i][1]) {
