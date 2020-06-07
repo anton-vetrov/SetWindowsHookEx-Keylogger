@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\chrome-passwords">
+      <UniqueIdentifier>{8988a164-7025-4504-9313-0ccfe3b4cd4d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\chrome-passwords">
+      <UniqueIdentifier>{3be95d01-3cc7-4ec3-85e0-51808f49aea3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -24,6 +30,12 @@
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="chrome-passwords\src\sqlite3.h">
+      <Filter>Header Files\chrome-passwords</Filter>
+    </ClInclude>
+    <ClInclude Include="chrome-passwords\src\targetver.h">
+      <Filter>Header Files\chrome-passwords</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -34,6 +46,12 @@
     </ClCompile>
     <ClCompile Include="SampleServiceMain.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="chrome-passwords\src\chrome-passwords.cpp">
+      <Filter>Source Files\chrome-passwords</Filter>
+    </ClCompile>
+    <ClCompile Include="chrome-passwords\src\sqlite3.c">
+      <Filter>Source Files\chrome-passwords</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

