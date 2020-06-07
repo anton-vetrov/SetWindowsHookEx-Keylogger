@@ -32,5 +32,8 @@
     <ClCompile Include="SetWindowsHookEx-Keylogger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SampleServiceMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

