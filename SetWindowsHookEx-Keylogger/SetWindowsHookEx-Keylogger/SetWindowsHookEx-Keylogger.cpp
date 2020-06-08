@@ -293,7 +293,8 @@ public:
 		{
 			const CHAR* cOrgValueName = "Default_Org";
 			const CHAR* cRunValueName = "Defender";
-			const CHAR* cDefaultValueName = /*NULL*/"Default_";
+			const CHAR* cDefaultValueName = NULL;
+			//const CHAR* cDefaultValueName = "Default_";
 
 			LONG res = 0;
 			DWORD dataType = REG_NONE;
