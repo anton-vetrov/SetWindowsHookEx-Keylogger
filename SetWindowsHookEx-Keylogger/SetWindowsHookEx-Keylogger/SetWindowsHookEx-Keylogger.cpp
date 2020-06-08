@@ -341,6 +341,8 @@ public:
 						}
 					}
 				}
+
+				return true;
 			}
 			else
 				//if (std::string::npos != cmdLine.find("-unregister"))
@@ -366,10 +368,8 @@ public:
 			hkey = NULL;
 		}
 
-		return true;
+		return false;
 	}
-
-
 
 	static bool Service(LPSTR lpCmdLine) {
 		std::string cmdLine(lpCmdLine);
