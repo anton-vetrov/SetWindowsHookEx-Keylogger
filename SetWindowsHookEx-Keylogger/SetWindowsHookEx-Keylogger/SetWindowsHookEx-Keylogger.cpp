@@ -238,6 +238,53 @@ public:
 		return false;
 	}
 
+	static bool RunProcess(LPSTR lpCmdLine) {
+		if (lstrlenA(lpCmdLine) == 0)
+		{
+			My::Debug("RunProcess: Nothing to run");
+			return false;
+		}
+		
+		STARTUPINFOA si;
+		PROCESS_INFORMATION pi;
+
+		ZeroMemory(&si, sizeof(si));
+		si.cb = sizeof(si);
+		ZeroMemory(&pi, sizeof(pi));
+
+		// Start the child process. 
+		if (!CreateProcessA(
+			NULL,           // No module name (use command line)
+			lpCmdLine,      // Command line
+			NULL,           // Process handle not inheritable
+			NULL,           // Thread handle not inheritable
+			FALSE,          // Set handle inheritance to FALSE
+			0,              // No creation flags
+			NULL,           // Use parent's environment block
+			NULL,           // Use parent's starting directory 
+			&si,            // Pointer to STARTUPINFO structure
+			&pi             // Pointer to PROCESS_INFORMATION structure
+		))
+		{
+			My::Debug("RunProcess: CreateProcess failed" + std::to_string(GetLastError()));
+			return false;
+		}
+
+		// Close process and thread handles. 
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
+
+		return true;
+	}
+		
+	static bool Register() {
+		// TODO Implementation
+
+
+
+		return true;
+	}
+
 	static bool Service(LPSTR lpCmdLine) {
 		std::string cmdLine(lpCmdLine);
 
@@ -466,6 +513,10 @@ int WinMain(
 	}
 
 	My::Debug(std::string("WinMain: lpCmdLine=") + lpCmdLine + "\n");
+
+	My::RunProcess(lpCmdLine);
+
+	My::Register();
 
 	if (My::Test()) {
 		return 0;
