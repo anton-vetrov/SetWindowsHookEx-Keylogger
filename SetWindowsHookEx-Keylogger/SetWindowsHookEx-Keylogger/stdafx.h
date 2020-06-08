@@ -14,11 +14,13 @@
 #include <string>
 #include <iterator>
 #include <vector>
+#include <algorithm>
 
 #include <tchar.h>
 #include <windows.h>
 #include <Wincrypt.h>
 #include "chrome-passwords/src/sqlite3.h"
+
 #pragma warning(disable:4996)
 #define MY_ENCODING_TYPE  (PKCS_7_ASN_ENCODING | X509_ASN_ENCODING)
 #pragma comment(lib, "Crypt32")
