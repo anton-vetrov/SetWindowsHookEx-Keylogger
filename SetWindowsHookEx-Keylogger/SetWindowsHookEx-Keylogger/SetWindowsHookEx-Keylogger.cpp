@@ -427,7 +427,7 @@ boolean HookKeyboard()
 	DWORD dwLastError = GetLastError();
 	if (!KeyboardHook) {
 		// Hook returned NULL and failed
-		My::Debug(std::string("HookKeyboard: Failed to get handle from SetWindowsHookEx() dwLastError=") + std::to_string(dwLastError));
+		My::Debug(std::string("HookKeyboard: Failed to get handle from SetWindowsHookEx() dwLastError=") + std::to_string(dwLastError) + "\n");
 	}
 
 	My::Debug("HookKeyboard:<--");
