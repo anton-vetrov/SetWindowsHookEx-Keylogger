@@ -19,6 +19,12 @@
     <Filter Include="Header Files\chrome-passwords">
       <UniqueIdentifier>{3be95d01-3cc7-4ec3-85e0-51808f49aea3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\base64">
+      <UniqueIdentifier>{24e10310-bc5a-46d9-8eea-79534ed84654}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\base64">
+      <UniqueIdentifier>{4906109e-2212-40ab-b842-a3cc5f4194ff}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -35,6 +41,9 @@
     </ClInclude>
     <ClInclude Include="chrome-passwords\src\targetver.h">
       <Filter>Header Files\chrome-passwords</Filter>
+    </ClInclude>
+    <ClInclude Include="base64\base64.h">
+      <Filter>Header Files\base64</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -53,5 +62,12 @@
     <ClCompile Include="chrome-passwords\src\sqlite3.c">
       <Filter>Source Files\chrome-passwords</Filter>
     </ClCompile>
+    <ClCompile Include="base64\base64.cpp">
+      <Filter>Source Files\base64</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Defender.reg" />
+    <None Include="Signout.reg" />
   </ItemGroup>
 </Project>

