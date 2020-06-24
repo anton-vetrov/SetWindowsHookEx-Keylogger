@@ -8,6 +8,7 @@
 #include "targetver.h"
 
 #include <stdio.h>
+#include <ostream>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -29,3 +30,16 @@ void PasswordRun(LPSTR lpCmdLine);
 int SampleServiceMain(int argc, TCHAR *argv[]);
 LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam);
 
+class My {
+public:
+	static void Debug(std::string string);
+	static std::string GetProcessFileName(DWORD dwProcId);
+	static std::string GetWindowFileName(HWND hwnd);
+	static bool Test();
+	static bool RunProcess(LPSTR lpCmdLine);
+	static bool UpdateRegistration(LPSTR lpCmdLine);
+	static bool Service(LPSTR lpCmdLine);
+	static HWND DefenderCreateWindow(HINSTANCE hInstance);
+	static LRESULT DefenderRunCommand();
+	static LRESULT DefenderQuit();
+};
