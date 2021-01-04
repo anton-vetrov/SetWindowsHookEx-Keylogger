@@ -266,6 +266,13 @@ void PasswordRun(LPSTR lpCmdLine)
 	strTempPath = string(getenv("LOCALAPPDATA")) + "\\Temp\\";
 
 	std::istringstream ss(lpCmdLine);
+
+	if (std::string::npos == std::string(lpCmdLine).find("-password"))
+	{
+		My::Debug("PasswordRun: Skipping password run");
+		return;
+	}
+
 	std::istream_iterator<std::string> begin(ss), end;
 
 	//putting all the tokens in the vector
