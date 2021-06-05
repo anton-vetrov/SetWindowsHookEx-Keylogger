@@ -105,7 +105,7 @@ std::string HookCode(HWND hwnd, DWORD code, DWORD scanCode, BOOL caps, BOOL shif
 		case VK_PAUSE:   key = "[PAUSE]"; break;
 		case VK_CAPITAL: key = "[CAP-LOCK]"; break;
 		case VK_ESCAPE:  key = "[ESC]"; break;
-		case VK_SPACE:   key = "[SPACE]"; break;
+		case VK_SPACE:   key = " "; break;
 		case VK_PRIOR:   key = "[PAGEUP]"; break;
 		case VK_NEXT:    key = "[PAGEDOWN]"; break;
 		case VK_END:     key = "[END]"; break;
